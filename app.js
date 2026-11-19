@@ -1,11 +1,15 @@
 // ============================================================================
-// NEXUS HUB • MOTOR PRINCIPAL (BLOQUE 3A: SEGURIDAD, ACCESO, CARTELERA Y BÓVEDA)
+// NEXUS HUB • MOTOR PRINCIPAL CON SINCRONIZACIÓN EN SUPABASE (PARTE 1/2)
 // ============================================================================
 
 const STORAGE_KEY = "nexus_hub_v2_data";
 const INITIAL_PIN_CODE = "2026";
 const INITIAL_ACCESS_KEY = "2027_uno";
 const LEGACY_BAD_HASH = "e7000729004e59994e2bc174c31247d646ba3c46bc7bc537803893bb18ba2d73";
+
+const SUPABASE_URL = "https://ujsvjccnhjrchovjbkjy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_6x9uXjKp1wAec2UT-KGutA_5oNY9JEZ";
+const SUPABASE_ROW_ID = "main";
 
 async function sha256Hex(texto) {
   const limpio = String(texto ?? "").trim();
@@ -30,6 +34,7 @@ function crearEstadoInicial() {
     accessKeyHash: "",
     unlockedSession: false,
     currentAlias: "",
+    updatedAt: 0,
     items: [
       {
         id: "item-1",
@@ -78,40 +83,136 @@ function crearEstadoInicial() {
   };
 }
 
-function cargarEstado() {
+function normalizarEstado(parsed) {
+  const base = crearEstadoInicial();
+  if (!parsed || typeof parsed !== "object") return base;
+  return {
+    pinHash: parsed.pinHash || "",
+    accessKeyHash: parsed.accessKeyHash || "",
+    unlockedSession: Boolean(parsed.unlockedSession),
+    currentAlias: parsed.currentAlias || "",
+    updatedAt: Number(parsed.updatedAt) || 0,
+    items: Array.isArray(parsed.items) ? parsed.items : base.items,
+    polls: Array.isArray(parsed.polls) ? parsed.polls : base.polls,
+    requests: Array.isArray(parsed.requests) ? parsed.requests : [],
+    visits: Array.isArray(parsed.visits) ? parsed.visits : []
+  };
+}
+
+function cargarEstadoLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       const inicial = crearEstadoInicial();
-      guardarEstado(inicial);
+      guardarEstadoLocal(inicial);
       return inicial;
     }
-    const parsed = JSON.parse(raw);
-    const base = crearEstadoInicial();
-    return {
-      pinHash: parsed.pinHash || "",
-      accessKeyHash: parsed.accessKeyHash || "",
-      unlockedSession: Boolean(parsed.unlockedSession),
-      currentAlias: parsed.currentAlias || "",
-      items: Array.isArray(parsed.items) ? parsed.items : base.items,
-      polls: Array.isArray(parsed.polls) ? parsed.polls : base.polls,
-      requests: Array.isArray(parsed.requests) ? parsed.requests : [],
-      visits: Array.isArray(parsed.visits) ? parsed.visits : []
-    };
+    return normalizarEstado(JSON.parse(raw));
   } catch (err) {
     return crearEstadoInicial();
   }
 }
 
-function guardarEstado(estado) {
+function guardarEstadoLocal(estado) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
-  } catch (err) {
-    console.warn("No se pudo guardar en localStorage:", err);
+  } catch (err) {}
+}
+
+let state = cargarEstadoLocal();
+let guardandoNube = false;
+
+async function subirEstadoNube(estado) {
+  if (!SUPABASE_URL || !SUPABASE_KEY || guardandoNube) return;
+  guardandoNube = true;
+  try {
+    const payloadCompartido = {
+      pinHash: estado.pinHash || "",
+      accessKeyHash: estado.accessKeyHash || "",
+      updatedAt: Number(estado.updatedAt) || Date.now(),
+      items: Array.isArray(estado.items) ? estado.items : [],
+      polls: Array.isArray(estado.polls) ? estado.polls : [],
+      requests: Array.isArray(estado.requests) ? estado.requests : [],
+      visits: Array.isArray(estado.visits) ? estado.visits : []
+    };
+
+    const headers = {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: "Bearer " + SUPABASE_KEY,
+      Prefer: "return=minimal"
+    };
+
+    const patchUrl = `${SUPABASE_URL}/rest/v1/nexus_state?id=eq.${encodeURIComponent(SUPABASE_ROW_ID)}`;
+    let res = await fetch(patchUrl, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({
+        payload: payloadCompartido,
+        updated_at: new Date().toISOString()
+      })
+    });
+
+    if (!res.ok) {
+      await fetch(`${SUPABASE_URL}/rest/v1/nexus_state`, {
+        method: "POST",
+        headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({
+          id: SUPABASE_ROW_ID,
+          payload: payloadCompartido,
+          updated_at: new Date().toISOString()
+        })
+      });
+    }
+  } catch (e) {
+    console.warn("Sin conexión temporal a Supabase, guardado local activo.");
+  } finally {
+    guardandoNube = false;
   }
 }
 
-let state = cargarEstado();
+function guardarEstado(estado) {
+  estado.updatedAt = Date.now();
+  guardarEstadoLocal(estado);
+  subirEstadoNube(estado);
+}
+
+async function sincronizarDesdeNube() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/nexus_state?id=eq.${encodeURIComponent(SUPABASE_ROW_ID)}&select=payload`;
+    const res = await fetch(url, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: "Bearer " + SUPABASE_KEY
+      }
+    });
+    if (!res.ok) return;
+    const filas = await res.json();
+    const nube = filas && filas[0] && filas[0].payload;
+    if (!nube || typeof nube !== "object" || !Object.keys(nube).length) {
+      await subirEstadoNube(state);
+      return;
+    }
+    const nubeNorm = normalizarEstado(nube);
+    if (nubeNorm.updatedAt >= (Number(state.updatedAt) || 0)) {
+      state = {
+        ...state,
+        pinHash: nubeNorm.pinHash || state.pinHash,
+        accessKeyHash: nubeNorm.accessKeyHash || state.accessKeyHash,
+        updatedAt: nubeNorm.updatedAt,
+        items: nubeNorm.items,
+        polls: nubeNorm.polls,
+        requests: nubeNorm.requests,
+        visits: nubeNorm.visits
+      };
+      guardarEstadoLocal(state);
+      renderizarTodo();
+    } else {
+      await subirEstadoNube(state);
+    }
+  } catch (e) {}
+}
 
 function escaparHtml(str) {
   return String(str ?? "")
@@ -248,12 +349,13 @@ function registrarVisita(alias) {
 async function asegurarClaveUniversalInicial() {
   if (!state.accessKeyHash) {
     state.accessKeyHash = await sha256Hex(INITIAL_ACCESS_KEY);
-    guardarEstado(state);
+    guardarEstadoLocal(state);
   }
   return state.accessKeyHash;
 }
 
 async function intentarIngreso(aliasRaw, claveRaw, grabarVisita = true) {
+  await sincronizarDesdeNube();
   const alias = String(aliasRaw ?? "").trim();
   const clave = String(claveRaw ?? "").trim();
 
@@ -283,7 +385,7 @@ async function intentarIngreso(aliasRaw, claveRaw, grabarVisita = true) {
 
   state.currentAlias = alias;
   state.unlockedSession = true;
-  guardarEstado(state);
+  guardarEstadoLocal(state);
 
   if (grabarVisita) {
     registrarVisita(alias);
@@ -312,7 +414,7 @@ document.getElementById("btn-change-alias").addEventListener("click", () => {
   inpAlias.value = state.currentAlias || "";
   inpAccessKey.value = "";
   state.unlockedSession = false;
-  guardarEstado(state);
+  guardarEstadoLocal(state);
   hubMain.classList.add("hidden");
   gateScreen.classList.remove("hidden");
 });
@@ -413,7 +515,10 @@ document.getElementById("next-slide").addEventListener("click", () => {
   actualizarCarrusel();
 });
 
-// --- BÓVEDA: CATÁLOGO, MATRIZ 4x4 Y CANJE ---
+// ============================================================================
+// NEXUS HUB • BÓVEDA, CANALES, VOTACIONES, ADMIN Y NUBE (PARTE 2/2)
+// ============================================================================
+
 let categoriaActiva = "peliculas";
 let elementoSeleccionado = null;
 
@@ -559,9 +664,7 @@ function manejarClicCelda(idx, cel) {
   } else {
     bloqueadoMatriz = true;
     cel.style.background = "var(--err)";
-    setTimeout(() => {
-      cel.style.background = "";
-    }, 300);
+    setTimeout(() => { cel.style.background = ""; }, 300);
     sonar(180, 80, "sawtooth", 0.2, 0.1);
     matrixMsgEl.className = "feedback err";
     matrixMsgEl.textContent = "Secuencia incorrecta. Observa otra vez...";
@@ -655,10 +758,7 @@ document.getElementById("btn-copy-drive").addEventListener("click", async () => 
   sonar(700, 920, "sine", 0.12, 0.08);
 });
 
-// ============================================================================
-// NEXUS HUB • CANALES, RESPUESTAS DEL ADMIN Y VOTACIONES (BLOQUE 3B-1)
-// ============================================================================
-
+// --- CANALES Y PETICIONES ---
 const channelMeta = {
   "pedir-peli": {
     tag: "CANAL #PEDIR-PELÍCULA / SERIE",
@@ -720,7 +820,8 @@ function renderizarFeedCanal() {
     .join("");
 }
 
-document.getElementById("btn-send-request").addEventListener("click", () => {
+document.getElementById("btn-send-request").addEventListener("click", async () => {
+  await sincronizarDesdeNube();
   const inpTitle = document.getElementById("inp-req-title");
   const inpDetail = document.getElementById("inp-req-detail");
   const reqMsg = document.getElementById("req-msg");
@@ -734,7 +835,7 @@ document.getElementById("btn-send-request").addEventListener("click", () => {
     return;
   }
 
-  state.requests.unshift({
+    state.requests.unshift({
     id: "req-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
     channel: canalActivo,
     alias: state.currentAlias || "Visitante",
@@ -752,7 +853,7 @@ document.getElementById("btn-send-request").addEventListener("click", () => {
   inpTitle.value = "";
   inpDetail.value = "";
   reqMsg.className = "feedback ok";
-  reqMsg.textContent = "Enviado y registrado para el administrador.";
+  reqMsg.textContent = "Enviado y sincronizado con la nube.";
   sonar(587, 880, "triangle", 0.16, 0.09);
   renderizarFeedCanal();
 });
@@ -800,7 +901,8 @@ function renderizarVotaciones() {
     .join("");
 
   cont.querySelectorAll(".poll-option-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      await sincronizarDesdeNube();
       const poll = state.polls.find((p) => p.id === btn.dataset.poll);
       if (!poll) return;
       if (!Array.isArray(poll.votedBy)) poll.votedBy = [];
@@ -819,10 +921,7 @@ function renderizarVotaciones() {
   });
 }
 
-// ============================================================================
-// NEXUS HUB • PANEL DE ADMINISTRADOR Y ARRANQUE (BLOQUE 3B-2)
-// ============================================================================
-
+// --- PANEL DE ADMINISTRADOR ---
 let toquesNucleo = 0;
 let timerToques = null;
 const adminLoginModal = document.getElementById("admin-login-modal");
@@ -848,6 +947,7 @@ document.getElementById("btn-close-admin-login").addEventListener("click", () =>
 });
 
 async function validarAccesoAdmin() {
+  await sincronizarDesdeNube();
   const pinIngresado = String(inpAdminPin.value ?? "").trim();
   if (!pinIngresado) {
     adminLoginMsg.className = "feedback err";
@@ -1143,7 +1243,7 @@ function renderizarTodo() {
   renderizarVotaciones();
 }
 
-asegurarClaveUniversalInicial().then(() => {
+asegurarClaveUniversalInicial().then(async () => {
   if (state.currentAlias) {
     inpAlias.value = state.currentAlias;
   }
@@ -1151,9 +1251,8 @@ asegurarClaveUniversalInicial().then(() => {
     userBadge.textContent = "VISITANTE: " + state.currentAlias.toUpperCase();
     gateScreen.classList.add("hidden");
     hubMain.classList.remove("hidden");
-    renderizarTodo();
-  } else {
-    renderizarTodo();
   }
+  renderizarTodo();
+  await sincronizarDesdeNube();
+  setInterval(sincronizarDesdeNube, 15000);
 });
-
