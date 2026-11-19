@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS HUB • Centro Interactivo</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <canvas id="fx-canvas"></canvas>
+
+  <!-- BARRA SUPERIOR Y LLAVE OCULTA DE ADMINISTRADOR (5 TOQUES EN EL NÚCLEO) -->
+  <header class="topbar">
+    <div class="brand" id="admin-trigger" title="Núcleo del Sistema">
+      <span class="core-icon">◈</span>
+      <div>
+        <div class="brand-title">NEXUS HUB</div>
+        <div class="brand-sub" id="user-badge">VISITANTE: SIN IDENTIFICAR</div>
+      </div>
+    </div>
+    <button class="btn-chip" id="btn-change-alias" title="Cambiar Alias">👤 Alias</button>
+  </header>
+
+  <!-- PORTAL DE ACCESO RÁPIDO (ALIAS + CLAVE UNIVERSAL) -->
+  <section id="gate-screen" class="panel gate-card">
+    <div class="tag">ACCESO AL SISTEMA</div>
+    <h1>Identificación Rápida</h1>
+    <p class="muted">Escribe tu alias y la clave de acceso del centro para entrar y registrar tu visita.</p>
+    <input type="text" id="inp-alias" maxlength="24" placeholder="Escribe tu alias (Ej. Nombre...)" autocomplete="off" />
+    <input type="password" id="inp-access-key" maxlength="40" placeholder="Clave de acceso del centro" autocomplete="off" />
+    <button class="btn btn-primary" id="btn-enter-hub">⚡ Ingresar al Centro</button>
+    <div class="feedback" id="gate-msg"></div>
+  </section>
+
+  <!-- CONTENEDOR PRINCIPAL (SE ACTIVA AL VALIDAR ACCESO) -->
+  <main id="hub-main" class="hidden">
+
+    <!-- NAVEGACIÓN DE APARTADOS PRINCIPALES -->
+    <nav class="main-tabs">
+      <button class="tab-btn active" data-tab="tab-inicio">🏠 Inicio</button>
+      <button class="tab-btn" data-tab="tab-boveda">🎬 Bóveda</button>
+      <button class="tab-btn" data-tab="tab-comunidad">💬 Canales</button>
+      <button class="tab-btn" data-tab="tab-votaciones">🗳️ Votos</button>
+    </nav>
+
+    <!-- =========================================================
+         APARTADO 0: INICIO & CARTELERA DESLIZANTE
+         ========================================================= -->
+    <section id="tab-inicio" class="tab-view">
+      <div class="section-head">
+        <span class="tag">CARTELERA EN VIVO</span>
+        <h2>Habilitados por el Administrador</h2>
+      </div>
+
+      <!-- Cartelera deslizante -->
+      <div class="carousel-wrap">
+        <div class="carousel-track" id="billboard-track"></div>
+        <div class="carousel-controls">
+          <button class="btn-icon" id="prev-slide">◀</button>
+          <div class="carousel-dots" id="billboard-dots"></div>
+          <button class="btn-icon" id="next-slide">▶</button>
+        </div>
+      </div>
+
+      <div class="panel info-grid">
+        <div class="mini-card" data-jump="tab-boveda">
+          <div class="mini-icon">🔐</div>
+          <strong>Bóveda & Retos</strong>
+          <span>Películas, series, libros, archivos y canje de enlaces.</span>
+        </div>
+        <div class="mini-card" data-jump="tab-comunidad">
+          <div class="mini-icon">📡</div>
+          <strong>Peticiones & Canales</strong>
+          <span>Pide películas, archivos, libros o deja preguntas.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         APARTADO 1: BÓVEDA (SUB-APARTADOS + RETO + CANJE DRIVE)
+         ========================================================= -->
+    <section id="tab-boveda" class="tab-view hidden">
+      <!-- Sub-apartados de categoría -->
+      <div class="sub-tabs" id="vault-categories">
+        <button class="sub-btn active" data-cat="peliculas">🎬 Películas</button>
+        <button class="sub-btn" data-cat="series">📺 Series / Anime</button>
+        <button class="sub-btn" data-cat="archivos">📁 Archivos</button>
+      </div>
+
+      <!-- Sub-vista 1A: Lista de contenido disponible en la categoría -->
+      <div id="vault-list-view" class="panel">
+        <div class="tag">SELECCIONA UN ELEMENTO</div>
+        <h2 id="vault-cat-title">Catálogo de Películas</h2>
+        <p class="muted">Elige lo que deseas desbloquear para iniciar la prueba de acceso.</p>
+        <div id="vault-items-list" class="items-stack"></div>
+      </div>
+
+      <!-- Sub-vista 1B: Prueba de concentración + Canje de código -->
+      <div id="vault-challenge-view" class="panel hidden">
+        <button class="btn-link" id="btn-back-vault">← Volver al catálogo</button>
+        <div class="tag" id="selected-item-cat">ELEMENTO SELECCIONADO</div>
+        <h2 id="selected-item-title">Título</h2>
+
+        <!-- Minijuego de Memoria y Secuencia 4x4 -->
+        <div class="challenge-box" id="challenge-stage">
+          <div class="challenge-header">
+            <span>🧠 PRUEBA DE CONCENTRACIÓN</span>
+            <strong id="matrix-level">Nivel 1 / 2</strong>
+          </div>
+          <p class="muted small" id="matrix-instruction">Pulsa "Iniciar Secuencia", memoriza las celdas iluminadas y repítelas en orden.</p>
+          <div class="matrix-grid" id="matrix-grid"></div>
+          <button class="btn btn-secondary" id="btn-start-matrix">▶ Iniciar Secuencia</button>
+          <div class="feedback" id="matrix-msg"></div>
+        </div>
+
+        <!-- Caja de Código Obtenido (se revela al ganar el reto) -->
+        <div class="code-reveal hidden" id="code-earned-box">
+          <div class="small">CÓDIGO GENERADO PARA ESTE ELEMENTO:</div>
+          <div class="code-pill" id="earned-code-text">---</div>
+        </div>
+
+        <!-- Canje del Código -->
+        <div class="redeem-box">
+          <label class="small" for="inp-vault-code">Ingresa o pega el código de desbloqueo:</label>
+          <input type="text" id="inp-vault-code" placeholder="Ej. NEX-1010" autocomplete="off" />
+          <button class="btn btn-primary" id="btn-verify-code">🔓 Verificar y Obtener Enlace</button>
+          <div class="feedback" id="redeem-msg"></div>
+        </div>
+
+        <!-- Enlace Final de Google Drive -->
+        <div class="drive-result hidden" id="drive-result-box">
+          <div class="tag ok-tag">ACCESO CONCEDIDO</div>
+          <div class="url-display" id="final-drive-url"></div>
+          <div class="row-actions">
+            <button class="btn btn-secondary" id="btn-copy-drive">📋 Copiar Link</button>
+            <a class="btn btn-primary" id="btn-open-drive" href="#" target="_blank" rel="noopener noreferrer">🚀 Abrir Drive</a>
+          </div>
+          <div class="feedback ok" id="copy-drive-msg"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         APARTADO 2: CANALES Y PETICIONES
+         ========================================================= -->
+    <section id="tab-comunidad" class="tab-view hidden">
+      <div class="sub-tabs" id="channel-tabs">
+        <button class="sub-btn active" data-channel="pedir-peli">🎬 Pedir Película / Serie</button>
+        <button class="sub-btn" data-channel="pedir-archivo">📁 Pedir Archivo / Libro</button>
+        <button class="sub-btn" data-channel="preguntas">❓ Preguntas / Tablón</button>
+      </div>
+
+      <div class="panel">
+        <div class="tag" id="channel-tag">CANAL #PEDIR-PELÍCULA</div>
+        <h2 id="channel-title">Solicitar Película o Serie</h2>
+        <p class="muted" id="channel-desc">Escribe lo que deseas que el administrador agregue o revise.</p>
+
+        <div class="request-form">
+          <input type="text" id="inp-req-title" maxlength="80" placeholder="Título o tema de tu solicitud..." />
+          <textarea id="inp-req-detail" rows="2" maxlength="220" placeholder="Detalles opcionales (idioma, capítulo, libro, formato...)"></textarea>
+          <button class="btn btn-primary" id="btn-send-request">📨 Enviar al Administrador</button>
+          <div class="feedback" id="req-msg"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="small muted" style="margin-bottom: 8px;">Actividad reciente en este canal:</div>
+        <div id="channel-feed" class="feed-list"></div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         APARTADO 3: VOTACIONES / ENCUESTAS LIBRES
+         ========================================================= -->
+    <section id="tab-votaciones" class="tab-view hidden">
+      <div class="section-head">
+        <span class="tag">ENCUESTAS ABIERTAS</span>
+        <h2>Votaciones del Centro</h2>
+      </div>
+      <div id="polls-feed" class="items-stack"></div>
+    </section>
+  </main>
+
+  <!-- =========================================================
+       MODAL DE ACCESO AL PANEL DE ADMINISTRADOR (OCULTO)
+       ========================================================= -->
+  <div id="admin-login-modal" class="modal-backdrop hidden">
+    <div class="panel modal-card">
+      <div class="tag">ZONA RESTRINGIDA</div>
+      <h2>Autenticación de Administrador</h2>
+      <p class="muted small">Verificación criptográfica local. Introduce tu PIN maestro.</p>
+      <input type="password" id="inp-admin-pin" inputmode="numeric" placeholder="PIN de Administrador" />
+      <div class="row-actions">
+        <button class="btn btn-secondary" id="btn-close-admin-login">Cancelar</button>
+        <button class="btn btn-primary" id="btn-confirm-admin-pin">Entrar</button>
+      </div>
+      <div class="feedback" id="admin-login-msg"></div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       PANEL DE CONTROL DEL ADMINISTRADOR (EDICIÓN EN VIVO)
+       ========================================================= -->
+  <div id="admin-panel-modal" class="modal-backdrop hidden">
+    <div class="panel modal-card modal-large">
+      <div class="admin-header">
+        <div>
+          <div class="tag">MODO ADMINISTRADOR ACTIVO</div>
+          <h2>Centro de Control Total</h2>
+        </div>
+        <button class="btn-icon" id="btn-exit-admin">✕</button>
+      </div>
+
+      <div class="sub-tabs" id="admin-tabs">
+        <button class="sub-btn active" data-admtab="adm-items">🎬 Contenido</button>
+        <button class="sub-btn" data-admtab="adm-polls">🗳️ Votos</button>
+        <button class="sub-btn" data-admtab="adm-logs">👁️ Registros</button>
+        <button class="sub-btn" data-admtab="adm-security">🔐 Claves y Copia</button>
+      </div>
+
+      <!-- Admin Tab 1: Crear / Editar / Borrar Contenido y Cartelera -->
+      <div id="adm-items" class="adm-view">
+        <h3 id="adm-form-heading">Agregar Nuevo Elemento</h3>
+        <input type="hidden" id="adm-edit-id" />
+        <div class="form-grid">
+          <select id="adm-cat">
+            <option value="peliculas">🎬 Películas</option>
+            <option value="series">📺 Series / Anime</option>
+            <option value="archivos">📁 Archivos / Libros</option>
+          </select>
+          <input type="text" id="adm-title" placeholder="Título (Ej. La Emperatriz Cap 10 o Libro X)" />
+          <input type="text" id="adm-code" placeholder="Código secreto (Ej. EMP-1010)" />
+          <input type="url" id="adm-url" placeholder="Enlace de Google Drive (https://...)" />
+          <input type="url" id="adm-img" placeholder="Enlace de imagen para cartelera (opcional, URL)" />
+          <input type="text" id="adm-banner" placeholder="Texto en cartelera (Ej. ¡Nuevo estreno habilitado!)" />
+          <label class="check-row">
+            <input type="checkbox" id="adm-featured" checked />
+            <span>Mostrar en la cartelera deslizante del Inicio</span>
+          </label>
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-primary" id="btn-save-item">💾 Guardar Elemento</button>
+          <button class="btn btn-secondary hidden" id="btn-cancel-edit">Cancelar Edición</button>
+        </div>
+        <div class="feedback" id="adm-item-msg"></div>
+
+        <div class="divider"></div>
+        <h3>Elementos Activos (Editar o Borrar)</h3>
+        <div id="adm-items-list" class="items-stack"></div>
+      </div>
+
+      <!-- Admin Tab 2: Crear / Borrar Encuestas y Ver Resultados -->
+      <div id="adm-polls" class="adm-view hidden">
+        <h3>Crear Nueva Encuesta Libre</h3>
+        <input type="text" id="adm-poll-question" maxlength="100" placeholder="Pregunta o tema (Ej. ¿Qué libro subimos esta semana?)" />
+        <textarea id="adm-poll-options" rows="3" placeholder="Escribe una opción por línea (mínimo 2 opciones)"></textarea>
+        <button class="btn btn-primary" id="btn-save-poll">📊 Publicar Encuesta</button>
+        <div class="feedback" id="adm-poll-msg"></div>
+
+        <div class="divider"></div>
+        <h3>Encuestas Activas y Conteo de Votos</h3>
+        <div id="adm-polls-list" class="items-stack"></div>
+      </div>
+
+      <!-- Admin Tab 3: Peticiones (con Respuesta del Admin) y Visitas -->
+      <div id="adm-logs" class="adm-view hidden">
+        <div class="row-between">
+          <h3>Peticiones de Usuarios</h3>
+          <button class="btn-link danger" id="btn-clear-reqs">Borrar peticiones</button>
+        </div>
+        <div id="adm-requests-list" class="feed-list"></div>
+
+        <div class="divider"></div>
+        <div class="row-between">
+          <h3>Historial de Accesos (Alias)</h3>
+          <button class="btn-link danger" id="btn-clear-visits">Limpiar historial</button>
+        </div>
+        <div id="adm-visits-list" class="feed-list"></div>
+      </div>
+
+      <!-- Admin Tab 4: Clave de Acceso Universal, PIN Admin y Respaldo JSON -->
+      <div id="adm-security" class="adm-view hidden">
+        <h3>Clave de Acceso Universal al Centro</h3>
+        <p class="muted small">Es la clave que pides a quienes invites al entrar. Cámbiala si llega a filtrarse.</p>
+        <input type="text" id="adm-new-access-key" maxlength="40" placeholder="Nueva clave de acceso (mínimo 4 caracteres)" />
+        <button class="btn btn-secondary" id="btn-update-access-key">🌐 Actualizar Clave Universal</button>
+        <div class="feedback" id="adm-access-key-msg"></div>
+
+        <div class="divider"></div>
+        <h3>Cambiar PIN de Administrador</h3>
+        <p class="muted small">El PIN nunca se guarda como texto visible; se almacena su firma criptográfica SHA-256.</p>
+        <input type="password" id="adm-new-pin" placeholder="Nuevo PIN de admin (mínimo 4 caracteres)" />
+        <button class="btn btn-primary" id="btn-update-pin">🔑 Actualizar Firma de Seguridad</button>
+        <div class="feedback" id="adm-pin-msg"></div>
+
+        <div class="divider"></div>
+        <h3>Copia de Seguridad</h3>
+        <p class="muted small">Descarga toda tu configuración, elementos, encuestas y registros en un archivo.</p>
+        <button class="btn btn-secondary" id="btn-export-backup">⬇️ Descargar Respaldo (.json)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
