@@ -1,16 +1,17 @@
 :root {
-  --bg-dark: #070911;
-  --bg-card: #101524;
-  --bg-card-2: #171e33;
-  --text-main: #f3f6ff;
-  --text-muted: #98a2c2;
-  --accent: #38bdf8;
-  --accent-2: #818cf8;
-  --gold: #fbbf24;
-  --ok: #34d399;
-  --err: #fb7185;
-  --border: rgba(148, 163, 184, 0.2);
-  --radius: 16px;
+  --bg-dark: #14181c;
+  --bg-card: #1c2228;
+  --bg-card-2: #232a32;
+  --text-main: #eef2f6;
+  --text-muted: #9ab;
+  --accent: #00e054;
+  --accent-2: #40bcf4;
+  --gold: #ff8000;
+  --ok: #00e054;
+  --err: #ff5c6c;
+  --border: rgba(154, 170, 187, 0.18);
+  --radius: 12px;
+  --ease-cinematic: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -19,13 +20,28 @@
   padding: 0;
 }
 
+@keyframes fadeUpIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: radial-gradient(circle at 50% -10%, #16223d 0%, var(--bg-dark) 68%);
+  background:
+    radial-gradient(ellipse at 50% -8%, rgba(0, 224, 84, 0.08), transparent 55%),
+    radial-gradient(ellipse at 85% 15%, rgba(64, 188, 244, 0.06), transparent 45%),
+    var(--bg-dark);
   color: var(--text-main);
   min-height: 100vh;
   padding: 16px 14px 80px;
   overflow-x: hidden;
+  line-height: 1.45;
 }
 
 #fx-canvas {
@@ -49,93 +65,108 @@ body {
 
 .tag {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
   color: var(--accent);
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(0, 224, 84, 0.11);
+  border: 1px solid rgba(0, 224, 84, 0.32);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   margin-bottom: 8px;
 }
 
 .ok-tag {
   color: var(--ok);
-  background: rgba(52, 211, 153, 0.14);
-  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(0, 224, 84, 0.14);
+  border-color: rgba(0, 224, 84, 0.45);
 }
 
 /* BARRA SUPERIOR */
 .topbar {
   position: relative;
   z-index: 10;
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 14px;
-  background: rgba(16, 21, 36, 0.85);
-  backdrop-filter: blur(10px);
+  padding: 12px 16px;
+  background: rgba(20, 24, 28, 0.88);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  animation: fadeUpIn 0.35s var(--ease-cinematic) both;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   cursor: pointer;
   user-select: none;
 }
 
+.brand:hover .core-icon {
+  transform: scale(1.08) rotate(15deg);
+}
+
 .brand:active .core-icon {
-  transform: scale(0.86) rotate(45deg);
+  transform: scale(0.88) rotate(45deg);
 }
 
 .core-icon {
-  font-size: 1.7rem;
-  color: var(--gold);
-  text-shadow: 0 0 16px rgba(251, 191, 36, 0.65);
-  transition: transform 0.15s ease;
+  font-size: 1.65rem;
+  color: var(--accent);
+  text-shadow: 0 0 14px rgba(0, 224, 84, 0.35);
+  transition: transform 0.22s var(--ease-cinematic);
 }
 
 .brand-title {
   font-weight: 900;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.6px;
   font-size: 1rem;
+  color: #ffffff;
 }
 
 .brand-sub {
   font-size: 0.72rem;
   color: var(--text-muted);
+  letter-spacing: 0.4px;
 }
 
 /* TARJETAS Y CONTENEDORES */
 main, .gate-card {
   position: relative;
   z-index: 5;
-  max-width: 680px;
+  max-width: 720px;
   margin: 0 auto;
 }
 
+.tab-view:not(.hidden) {
+  animation: fadeUpIn 0.32s var(--ease-cinematic) both;
+}
+
 .panel {
-  background: linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-2) 100%);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 18px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
 }
 
 .gate-card {
   margin-top: 28px;
   text-align: center;
+  animation: fadeUpIn 0.4s var(--ease-cinematic) both;
 }
 
 .gate-card h1 {
-  font-size: 1.6rem;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   margin-bottom: 8px;
 }
 
@@ -147,30 +178,33 @@ main, .gate-card {
 input, textarea, select {
   width: 100%;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(7, 9, 17, 0.75);
+  background: #101418;
   color: var(--text-main);
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   font-family: inherit;
   margin-bottom: 10px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--accent);
+  border-color: var(--accent-2);
+  background: #12171c;
+  box-shadow: 0 0 0 3px rgba(64, 188, 244, 0.14);
 }
 
 .btn {
   width: 100%;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: none;
   font-weight: 800;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.3px;
   cursor: pointer;
-  transition: transform 0.12s ease, opacity 0.2s ease;
+  transition: transform 0.16s var(--ease-cinematic), box-shadow 0.22s ease, filter 0.2s ease, opacity 0.2s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -178,8 +212,13 @@ input:focus, textarea:focus, select:focus {
   gap: 6px;
 }
 
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
 .btn:active:not(:disabled) {
-  transform: scale(0.97);
+  transform: scale(0.97) translateY(0);
 }
 
 .btn:disabled {
@@ -188,46 +227,76 @@ input:focus, textarea:focus, select:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #050814;
+  background: linear-gradient(135deg, var(--accent), #00b846);
+  color: #0b110d;
+  box-shadow: 0 6px 18px rgba(0, 224, 84, 0.2);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: #283038;
   color: var(--text-main);
   border: 1px solid var(--border);
 }
 
+.btn-secondary:hover:not(:disabled) {
+  border-color: rgba(154, 170, 187, 0.36);
+}
+
 .btn-chip {
-  padding: 8px 12px;
-  border-radius: 999px;
+  padding: 8px 13px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.06);
+  background: #232a32;
   color: var(--text-main);
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
+  transition: transform 0.15s var(--ease-cinematic), border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-chip:hover {
+  border-color: var(--accent-2);
+  background: #2a333d;
+}
+
+.btn-chip:active {
+  transform: scale(0.96);
 }
 
 .btn-icon {
   width: 38px;
   height: 38px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.07);
+  background: #232a32;
   color: var(--text-main);
   font-weight: 800;
   cursor: pointer;
+  transition: transform 0.16s var(--ease-cinematic), border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-icon:hover {
+  border-color: var(--accent);
+  background: #2b343e;
+}
+
+.btn-icon:active {
+  transform: scale(0.94);
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--accent-2);
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
   padding: 4px 0;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-link:hover {
+  color: var(--accent);
 }
 
 .btn-link.danger {
@@ -253,27 +322,33 @@ input:focus, textarea:focus, select:focus {
 .main-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 7px;
+  gap: 8px;
   margin-bottom: 14px;
 }
 
 .tab-btn {
-  padding: 10px 6px;
-  border-radius: 12px;
+  padding: 10px 8px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-muted);
   font-weight: 800;
   font-size: 0.84rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.18s var(--ease-cinematic), color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+  border-color: rgba(154, 170, 187, 0.35);
+  transform: translateY(-1px);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(129, 140, 248, 0.22));
-  color: var(--text-main);
+  background: #242d36;
+  color: #ffffff;
   border-color: var(--accent);
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.18);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .sub-tabs {
@@ -288,18 +363,24 @@ input:focus, textarea:focus, select:focus {
   flex: 1;
   min-width: max-content;
   padding: 9px 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-card);
   color: var(--text-muted);
   font-weight: 700;
   font-size: 0.82rem;
   cursor: pointer;
+  transition: transform 0.16s var(--ease-cinematic), color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.sub-btn:hover {
+  color: var(--text-main);
+  border-color: rgba(154, 170, 187, 0.35);
 }
 
 .sub-btn.active {
   background: var(--accent);
-  color: #050814;
+  color: #0b110d;
   border-color: var(--accent);
 }
 
@@ -309,6 +390,7 @@ input:focus, textarea:focus, select:focus {
 
 .section-head h2 {
   font-size: 1.25rem;
+  font-weight: 800;
 }
 
 /* CARTELERA DESLIZANTE E IMAGEN ESPEJO POR URL */
@@ -319,33 +401,42 @@ input:focus, textarea:focus, select:focus {
   border: 1px solid var(--border);
   background: var(--bg-card);
   margin-bottom: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
 .carousel-track {
   display: flex;
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.45s var(--ease-cinematic);
 }
 
 .slide-card {
   min-width: 100%;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(129, 140, 248, 0.08) 55%, rgba(251, 191, 36, 0.12));
+  background:
+    linear-gradient(125deg, rgba(255, 128, 0, 0.11), rgba(64, 188, 244, 0.08) 52%, rgba(0, 224, 84, 0.07)),
+    var(--bg-card-2);
 }
 
 .slide-title {
   font-size: 1.25rem;
   font-weight: 900;
   margin: 6px 0 10px;
+  color: #ffffff;
 }
 
 .slide-mirror-img {
   width: 100%;
-  max-height: 210px;
+  max-height: 220px;
   object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   margin-bottom: 12px;
-  background: rgba(7, 9, 17, 0.6);
+  background: #101418;
+  transition: transform 0.35s var(--ease-cinematic);
+}
+
+.slide-card:hover .slide-mirror-img {
+  transform: scale(1.015);
 }
 
 .slide-banner {
@@ -360,7 +451,8 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(7, 9, 17, 0.6);
+  background: #14181c;
+  border-top: 1px solid var(--border);
 }
 
 .carousel-dots {
@@ -372,7 +464,8 @@ input:focus, textarea:focus, select:focus {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(154, 170, 187, 0.28);
+  transition: width 0.25s var(--ease-cinematic), background-color 0.25s ease, border-radius 0.25s ease;
 }
 
 .dot.active {
@@ -390,21 +483,29 @@ input:focus, textarea:focus, select:focus {
 
 .mini-card {
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: #151a1f;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: transform 0.2s var(--ease-cinematic), border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mini-card:hover {
   border-color: var(--accent);
+  background: #1a2027;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+}
+
+.mini-card:active {
+  transform: scale(0.98);
 }
 
 .mini-icon {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
 }
 
 .mini-card span {
@@ -420,14 +521,20 @@ input:focus, textarea:focus, select:focus {
 }
 
 .item-card, .feed-card {
-  padding: 13px;
-  border-radius: 12px;
+  padding: 13px 14px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(7, 9, 17, 0.55);
+  background: #14181c;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.18s var(--ease-cinematic);
+}
+
+.item-card:hover, .feed-card:hover {
+  border-color: rgba(154, 170, 187, 0.34);
+  background: #181d22;
 }
 
 .feed-card.column-card {
@@ -438,9 +545,9 @@ input:focus, textarea:focus, select:focus {
 .admin-reply-box {
   margin-top: 8px;
   padding: 9px 11px;
-  border-radius: 10px;
-  border-left: 3px solid var(--accent);
-  background: rgba(56, 189, 248, 0.09);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent-2);
+  background: rgba(64, 188, 244, 0.1);
   font-size: 0.83rem;
   color: var(--text-main);
 }
@@ -448,7 +555,7 @@ input:focus, textarea:focus, select:focus {
 .admin-reply-label {
   font-size: 0.72rem;
   font-weight: 800;
-  color: var(--accent);
+  color: var(--accent-2);
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -461,34 +568,44 @@ input:focus, textarea:focus, select:focus {
 
 /* VOTACIONES / ENCUESTAS */
 .poll-card {
-  padding: 15px;
-  border-radius: 14px;
+  padding: 15px 16px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(7, 9, 17, 0.62);
+  background: #14181c;
+  transition: border-color 0.2s ease;
+}
+
+.poll-card:hover {
+  border-color: rgba(154, 170, 187, 0.34);
 }
 
 .poll-option-btn {
   width: 100%;
   text-align: left;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: #1c2228;
   color: var(--text-main);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   margin-top: 8px;
-  transition: border-color 0.2s, background 0.2s;
+  transition: transform 0.14s var(--ease-cinematic), border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .poll-option-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-2);
+  background: #222931;
+}
+
+.poll-option-btn:active {
+  transform: scale(0.99);
 }
 
 .poll-option-btn.voted {
   border-color: var(--ok);
-  background: rgba(52, 211, 153, 0.12);
+  background: rgba(0, 224, 84, 0.1);
 }
 
 .poll-bar-wrap {
@@ -496,23 +613,23 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  margin-top: 6px;
+  margin-top: 7px;
 }
 
 .poll-bar-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.35s var(--ease-cinematic);
 }
 
 /* MINIJUEGO DE CONCENTRACIÓN MATRIZ 4x4 */
 .challenge-box {
   margin: 14px 0;
   padding: 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  background: rgba(7, 9, 17, 0.65);
+  border-radius: 10px;
+  border: 1px solid rgba(64, 188, 244, 0.28);
+  background: #14181c;
 }
 
 .challenge-header {
@@ -532,13 +649,18 @@ input:focus, textarea:focus, select:focus {
 
 .cell-btn {
   aspect-ratio: 1 / 1;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
+  background: #1d232a;
   color: var(--text-main);
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.1s, background 0.15s, box-shadow 0.15s;
+  transition: transform 0.12s var(--ease-cinematic), background-color 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.cell-btn:hover {
+  border-color: rgba(154, 170, 187, 0.4);
+  background: #232a32;
 }
 
 .cell-btn:active {
@@ -547,23 +669,27 @@ input:focus, textarea:focus, select:focus {
 
 .cell-btn.lit {
   background: var(--gold);
-  color: #050814;
-  box-shadow: 0 0 16px rgba(251, 191, 36, 0.8);
+  border-color: var(--gold);
+  color: #0f1215;
+  box-shadow: 0 0 14px rgba(255, 128, 0, 0.65);
 }
 
 .cell-btn.ok-hit {
   background: var(--ok);
-  color: #050814;
+  border-color: var(--ok);
+  color: #0b110d;
+  box-shadow: 0 0 12px rgba(0, 224, 84, 0.5);
 }
 
 /* CÓDIGO Y ENLACE FINAL */
 .code-reveal {
   margin: 12px 0;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px dashed var(--gold);
-  background: rgba(251, 191, 36, 0.08);
+  background: rgba(255, 128, 0, 0.08);
   text-align: center;
+  animation: fadeUpIn 0.28s var(--ease-cinematic) both;
 }
 
 .code-pill {
@@ -579,15 +705,20 @@ input:focus, textarea:focus, select:focus {
   margin-top: 14px;
 }
 
+.drive-result:not(.hidden) {
+  animation: fadeUpIn 0.28s var(--ease-cinematic) both;
+}
+
 .url-display {
   padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(7, 9, 17, 0.85);
+  border-radius: 8px;
+  background: #101418;
   border: 1px solid var(--border);
   font-family: monospace;
   font-size: 0.82rem;
   word-break: break-all;
   margin: 8px 0 10px;
+  color: var(--accent-2);
 }
 
 .row-actions {
@@ -621,6 +752,7 @@ input:focus, textarea:focus, select:focus {
 .check-row input[type="checkbox"] {
   width: auto;
   margin: 0;
+  accent-color: var(--accent);
 }
 
 /* MODALES Y PANEL DE ADMINISTRADOR */
@@ -628,7 +760,7 @@ input:focus, textarea:focus, select:focus {
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: rgba(3, 5, 12, 0.85);
+  background: rgba(10, 13, 16, 0.84);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -638,13 +770,14 @@ input:focus, textarea:focus, select:focus {
 
 .modal-card {
   width: 100%;
-  max-width: 440px;
+  max-width: 450px;
   max-height: 88vh;
   overflow-y: auto;
+  animation: fadeUpIn 0.25s var(--ease-cinematic) both;
 }
 
 .modal-large {
-  max-width: 640px;
+  max-width: 660px;
 }
 
 .admin-header {
