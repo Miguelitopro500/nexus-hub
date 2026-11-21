@@ -1,5 +1,5 @@
 // ============================================================================
-// NEXUS HUB • MOTOR PRINCIPAL CON SINCRONIZACIÓN EN SUPABASE (PARTE 1/2)
+// NEXUS HUB • MOTOR PRINCIPAL CON SINCRONIZACIÓN EN SUPABASE (BLOQUE 1/3)
 // ============================================================================
 
 const STORAGE_KEY = "nexus_hub_v2_data";
@@ -44,7 +44,7 @@ function crearEstadoInicial() {
         code: "EMP-1010",
         url: "https://drive.google.com/",
         imgUrl: "",
-        banner: "¡Disponible en la bóveda! Resuelve la matriz para obtener el código.",
+        banner: "¡Disponible en la colección! Resuelve la matriz para obtener el código.",
         featured: true
       },
       {
@@ -64,7 +64,7 @@ function crearEstadoInicial() {
         code: "PACK-777",
         url: "https://drive.google.com/",
         imgUrl: "",
-        banner: "Archivo o recurso listo para desbloquear desde la Bóveda.",
+        banner: "Archivo o recurso listo para desbloquear desde la Colección.",
         featured: false
       }
     ],
@@ -352,6 +352,10 @@ async function sincronizarDesdeNube() {
   } catch (e) {}
 }
 
+// ============================================================================
+// NEXUS HUB • ACCESO, MENÚ DESPLEGABLE, CARTELERA Y COLECCIÓN (BLOQUE 2/3)
+// ============================================================================
+
 function escaparHtml(str) {
   return String(str ?? "")
     .replace(/&/g, "&amp;")
@@ -444,7 +448,7 @@ window.addEventListener("pointerdown", (e) => {
       }
       fxCtx.beginPath();
       fxCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      fxCtx.fillStyle = `rgba(56, 189, 248, ${p.vida})`;
+      fxCtx.fillStyle = `rgba(220, 38, 38, ${p.vida})`;
       fxCtx.fill();
     }
   }
@@ -574,9 +578,51 @@ document.getElementById("btn-change-alias").addEventListener("click", () => {
   gateScreen.classList.remove("hidden");
 });
 
-// --- NAVEGACIÓN ENTRE APARTADOS ---
+// --- NAVEGACIÓN ENTRE APARTADOS (MENÚ DESPLEGABLE) ---
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabViews = document.querySelectorAll(".tab-view");
+const sideDrawer = document.getElementById("side-drawer");
+const drawerBackdrop = document.getElementById("drawer-backdrop");
+const btnToggleDrawer = document.getElementById("btn-toggle-drawer");
+const btnCloseDrawer = document.getElementById("btn-close-drawer");
+const currentSectionLabel = document.getElementById("current-section-label");
+
+const nombresPestana = {
+  "tab-inicio": "Inicio",
+  "tab-boveda": "Colección",
+  "tab-comunidad": "Canales",
+  "tab-votaciones": "Votos"
+};
+
+function abrirMenuDesplegable() {
+  if (!sideDrawer || !drawerBackdrop) return;
+  sideDrawer.classList.remove("hidden");
+  drawerBackdrop.classList.remove("hidden");
+  if (btnToggleDrawer) btnToggleDrawer.setAttribute("aria-expanded", "true");
+}
+
+function cerrarMenuDesplegable() {
+  if (!sideDrawer || !drawerBackdrop) return;
+  sideDrawer.classList.add("hidden");
+  drawerBackdrop.classList.add("hidden");
+  if (btnToggleDrawer) btnToggleDrawer.setAttribute("aria-expanded", "false");
+}
+
+if (btnToggleDrawer) {
+  btnToggleDrawer.addEventListener("click", () => {
+    const estaAbierto = sideDrawer && !sideDrawer.classList.contains("hidden");
+    if (estaAbierto) cerrarMenuDesplegable();
+    else abrirMenuDesplegable();
+  });
+}
+
+if (btnCloseDrawer) {
+  btnCloseDrawer.addEventListener("click", cerrarMenuDesplegable);
+}
+
+if (drawerBackdrop) {
+  drawerBackdrop.addEventListener("click", cerrarMenuDesplegable);
+}
 
 function cambiarPestanaPrincipal(tabId) {
   tabButtons.forEach((btn) => {
@@ -585,6 +631,10 @@ function cambiarPestanaPrincipal(tabId) {
   tabViews.forEach((sec) => {
     sec.classList.toggle("hidden", sec.id !== tabId);
   });
+  if (currentSectionLabel) {
+    currentSectionLabel.textContent = nombresPestana[tabId] || "Inicio";
+  }
+  cerrarMenuDesplegable();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -639,8 +689,8 @@ function renderizarCartelera() {
           <div class="tag">${escaparHtml(item.category.toUpperCase())}</div>
           <div class="slide-title">${escaparHtml(item.title)}</div>
           ${bloqueImg}
-          <div class="slide-banner">${escaparHtml(item.banner || "Disponible para desbloquear en la Bóveda.")}</div>
-          <button class="btn btn-primary btn-ir-item" data-id="${item.id}" data-slide="${i}">⚡ Ir a Desbloquear</button>
+          <div class="slide-banner">${escaparHtml(item.banner || "Disponible para desbloquear en la Colección.")}</div>
+          <button type="button" class="btn btn-primary btn-ir-item" data-id="${item.id}" data-slide="${i}">Ir a Desbloquear</button>
         </div>
       `;
     })
@@ -670,14 +720,12 @@ document.getElementById("next-slide").addEventListener("click", () => {
   actualizarCarrusel();
 });
 
-// ============================================================================
-// NEXUS HUB • BÓVEDA, CANALES, VOTACIONES, ADMIN Y NUBE (PARTE 2/2)
-// ============================================================================
-
-let categoriaActiva = "peliculas";
+// --- COLECCIÓN Y CUADRÍCULA DE PORTADAS ---
+let categoriaActiva = "todas";
 let elementoSeleccionado = null;
 
 const catTitulos = {
+  todas: "Todo el Catálogo",
   peliculas: "Catálogo de Películas",
   series: "Catálogo de Series / Anime",
   archivos: "Catálogo de Archivos y Libros"
@@ -700,23 +748,32 @@ document.querySelectorAll("#vault-categories .sub-btn").forEach((btn) => {
 
 function renderizarListaBoveda() {
   const cont = document.getElementById("vault-items-list");
-  const filtrados = state.items.filter((it) => it.category === categoriaActiva);
+  const filtrados =
+    categoriaActiva === "todas"
+      ? state.items
+      : state.items.filter((it) => it.category === categoriaActiva);
+
   if (!filtrados.length) {
     cont.innerHTML = `<div class="muted small">No hay elementos cargados en esta categoría todavía.</div>`;
     return;
   }
+
   cont.innerHTML = filtrados
-    .map(
-      (it) => `
-      <div class="item-card">
-        <div>
-          <strong>${escaparHtml(it.title)}</strong>
-          <div class="item-meta">${escaparHtml(it.banner || "Requiere prueba de concentración")}</div>
-        </div>
-        <button class="btn btn-secondary btn-abrir-reto" style="width:auto;" data-id="${it.id}">Entrar</button>
-      </div>
-    `
-    )
+    .map((it) => {
+      const imgSegura = limpiarUrlImagen(it.imgUrl);
+      const thumbHtml = imgSegura
+        ? `<img class="poster-thumb-img" src="${escaparHtml(imgSegura)}" alt="${escaparHtml(it.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><div class="poster-thumb-empty" style="display:none;">${escaparHtml(it.category.toUpperCase())}</div>`
+        : `<div class="poster-thumb-empty">${escaparHtml(it.category.toUpperCase())}</div>`;
+
+      return `
+        <button type="button" class="poster-card btn-abrir-reto" data-id="${it.id}">
+          <div class="poster-thumb-wrap">
+            ${thumbHtml}
+          </div>
+          <div class="poster-card-title" title="${escaparHtml(it.title)}">${escaparHtml(it.title)}</div>
+        </button>
+      `;
+    })
     .join("");
 
   cont.querySelectorAll(".btn-abrir-reto").forEach((btn) => {
@@ -727,7 +784,10 @@ function renderizarListaBoveda() {
   });
 }
 
-// --- MINIJUEGO MATRIZ 4x4 ---
+// ============================================================================
+// NEXUS HUB • RETO 4x4, CANJE Y CANALES (BLOQUE 3A)
+// ============================================================================
+
 const matrixGrid = document.getElementById("matrix-grid");
 const matrixLevelEl = document.getElementById("matrix-level");
 const matrixInstrEl = document.getElementById("matrix-instruction");
@@ -850,6 +910,28 @@ function abrirRetoDeElemento(item) {
   document.getElementById("vault-challenge-view").classList.remove("hidden");
   document.getElementById("selected-item-cat").textContent = item.category.toUpperCase();
   document.getElementById("selected-item-title").textContent = item.title;
+  document.getElementById("selected-item-synopsis").textContent =
+    item.banner || "Elemento disponible para desbloquear mediante prueba.";
+
+  const imgEl = document.getElementById("selected-item-img");
+  const fallbackEl = document.getElementById("selected-item-poster-fallback");
+  const imgSegura = limpiarUrlImagen(item.imgUrl);
+
+  if (imgSegura) {
+    imgEl.src = imgSegura;
+    imgEl.alt = item.title;
+    imgEl.classList.remove("hidden");
+    fallbackEl.classList.add("hidden");
+    imgEl.onerror = () => {
+      imgEl.classList.add("hidden");
+      fallbackEl.classList.remove("hidden");
+    };
+  } else {
+    imgEl.src = "";
+    imgEl.classList.add("hidden");
+    fallbackEl.classList.remove("hidden");
+  }
+
   document.getElementById("matrix-level").textContent = "Nivel 1 / 2";
   document.getElementById("matrix-instruction").textContent =
     'Pulsa "Iniciar Secuencia", memoriza las celdas iluminadas y repítelas en orden.';
@@ -859,6 +941,7 @@ function abrirRetoDeElemento(item) {
   document.getElementById("redeem-msg").textContent = "";
   document.getElementById("drive-result-box").classList.add("hidden");
   document.getElementById("copy-drive-msg").textContent = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 document.getElementById("btn-back-vault").addEventListener("click", () => {
@@ -990,7 +1073,7 @@ document.getElementById("btn-send-request").addEventListener("click", async () =
     return;
   }
 
-    state.requests.unshift({
+  state.requests.unshift({
     id: "req-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
     channel: canalActivo,
     alias: state.currentAlias || "Visitante",
@@ -1004,7 +1087,7 @@ document.getElementById("btn-send-request").addEventListener("click", async () =
     state.requests = state.requests.slice(0, 200);
   }
 
-  guardarEstado(state);
+  await guardarEstado(state);
   inpTitle.value = "";
   inpDetail.value = "";
   reqMsg.className = "feedback ok";
@@ -1013,7 +1096,10 @@ document.getElementById("btn-send-request").addEventListener("click", async () =
   renderizarFeedCanal();
 });
 
-// --- VOTACIONES / ENCUESTAS LIBRES ---
+// ============================================================================
+// NEXUS HUB • VOTACIONES, ADMINISTRADOR Y ARRANQUE (BLOQUE 3B)
+// ============================================================================
+
 function renderizarVotaciones() {
   const cont = document.getElementById("polls-feed");
   if (!cont) return;
@@ -1069,14 +1155,13 @@ function renderizarVotaciones() {
       if (!opt) return;
       opt.votes = (Number(opt.votes) || 0) + 1;
       poll.votedBy.push(votanteKey);
-      guardarEstado(state);
+      await guardarEstado(state);
       renderizarVotaciones();
       sonar(587, 880, "triangle", 0.15, 0.09);
     });
   });
 }
 
-// --- PANEL DE ADMINISTRADOR ---
 let toquesNucleo = 0;
 let timerToques = null;
 const adminLoginModal = document.getElementById("admin-login-modal");
@@ -1205,8 +1290,8 @@ function renderizarListaAdminItems() {
         <div class="item-meta">${escaparHtml(it.category.toUpperCase())} • Código: ${escaparHtml(it.code)} ${it.featured ? "• Cartelera" : ""} ${it.imgUrl ? "• Con Img" : ""}</div>
       </div>
       <div style="display:flex; gap:6px;">
-        <button class="btn-chip btn-edit-item" data-id="${it.id}">Editar</button>
-        <button class="btn-chip btn-del-item" data-id="${it.id}" style="color:var(--err);">Borrar</button>
+        <button type="button" class="btn-chip btn-edit-item" data-id="${it.id}">Editar</button>
+        <button type="button" class="btn-chip btn-del-item" data-id="${it.id}" style="color:var(--err);">Borrar</button>
       </div>
     </div>
   `).join("");
@@ -1277,7 +1362,7 @@ function renderizarAdminPolls() {
           <strong>${escaparHtml(p.question)}</strong>
           <div class="item-meta">${resumen}</div>
         </div>
-        <button class="btn-chip btn-del-poll" data-id="${p.id}" style="color:var(--err);">Borrar</button>
+        <button type="button" class="btn-chip btn-del-poll" data-id="${p.id}" style="color:var(--err);">Borrar</button>
       </div>
     `;
   }).join("");
@@ -1304,7 +1389,7 @@ function renderizarRegistrosAdmin() {
           ${r.detail ? `<div class="item-meta">${escaparHtml(r.detail)}</div>` : ""}
           <div class="item-meta">Alias: ${escaparHtml(r.alias)} • ${escaparHtml(formatearHora(r.time))}</div>
           <input type="text" class="inp-reply-text" data-id="${r.id}" value="${escaparHtml(r.adminReply || "")}" placeholder="Escribe tu respuesta como administrador..." style="margin-top:8px; margin-bottom:6px;" />
-          <button type="button" class="btn-chip btn-save-reply" data-id="${r.id}">💬 Guardar Respuesta</button>
+          <button type="button" class="btn-chip btn-save-reply" data-id="${r.id}">Guardar Respuesta</button>
         </div>
       </div>
     `).join("");
@@ -1318,7 +1403,7 @@ function renderizarRegistrosAdmin() {
           guardarEstado(state);
           renderizarFeedCanal();
           btn.textContent = "✓ Guardado";
-          setTimeout(() => { btn.textContent = "💬 Guardar Respuesta"; }, 1200);
+          setTimeout(() => { btn.textContent = "Guardar Respuesta"; }, 1200);
         }
       });
     });
@@ -1333,7 +1418,7 @@ function renderizarRegistrosAdmin() {
             <strong>${escaparHtml(v.alias)}</strong>
             <div class="item-meta">${escaparHtml(formatearHora(v.time))}</div>
           </div>
-          <button type="button" class="btn-chip btn-kick-alias" data-alias="${escaparHtml(v.alias)}" style="color:var(--err);">🚪 Expulsar</button>
+          <button type="button" class="btn-chip btn-kick-alias" data-alias="${escaparHtml(v.alias)}" style="color:var(--err);">Expulsar</button>
         </div>
       `).join("");
 
@@ -1347,7 +1432,7 @@ function renderizarRegistrosAdmin() {
       state.kickedUsers[aliasObjetivo.toLowerCase()] = Date.now();
       guardarEstado(state);
       btn.textContent = "✓ Expulsado";
-      setTimeout(() => { btn.textContent = "🚪 Expulsar"; }, 1400);
+      setTimeout(() => { btn.textContent = "Expulsar"; }, 1400);
     });
   });
 }
