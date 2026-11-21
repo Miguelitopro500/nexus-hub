@@ -35,6 +35,7 @@ function crearEstadoInicial() {
     unlockedSession: false,
     currentAlias: "",
     updatedAt: 0,
+    kickedUsers: {},
     items: [
       {
         id: "item-1",
@@ -92,6 +93,10 @@ function normalizarEstado(parsed) {
     unlockedSession: Boolean(parsed.unlockedSession),
     currentAlias: parsed.currentAlias || "",
     updatedAt: Number(parsed.updatedAt) || 0,
+    kickedUsers:
+      parsed.kickedUsers && typeof parsed.kickedUsers === "object"
+        ? parsed.kickedUsers
+        : {},
     items: Array.isArray(parsed.items) ? parsed.items : base.items,
     polls: Array.isArray(parsed.polls) ? parsed.polls : base.polls,
     requests: Array.isArray(parsed.requests) ? parsed.requests : [],
@@ -130,6 +135,10 @@ async function subirEstadoNube(estado) {
       pinHash: estado.pinHash || "",
       accessKeyHash: estado.accessKeyHash || "",
       updatedAt: Number(estado.updatedAt) || Date.now(),
+      kickedUsers:
+        estado.kickedUsers && typeof estado.kickedUsers === "object"
+          ? estado.kickedUsers
+          : {},
       items: Array.isArray(estado.items) ? estado.items : [],
       polls: Array.isArray(estado.polls) ? estado.polls : [],
       requests: Array.isArray(estado.requests) ? estado.requests : [],
@@ -177,6 +186,33 @@ function guardarEstado(estado) {
   subirEstadoNube(estado);
 }
 
+function verificarSiFueExpulsado() {
+  if (!state.unlockedSession || !state.currentAlias) return false;
+  const claveAlias = state.currentAlias.trim().toLowerCase();
+  const expulsadoEn = Number(state.kickedUsers && state.kickedUsers[claveAlias]) || 0;
+  if (!expulsadoEn) return false;
+
+  const ultimaVisitaMia = (state.visits || []).find(
+    (v) => String(v.alias || "").trim().toLowerCase() === claveAlias
+  );
+  const horaEntrada = Number(ultimaVisitaMia && ultimaVisitaMia.time) || 0;
+
+  if (expulsadoEn > horaEntrada) {
+    state.unlockedSession = false;
+    guardarEstadoLocal(state);
+    if (typeof hubMain !== "undefined" && hubMain) hubMain.classList.add("hidden");
+    if (typeof gateScreen !== "undefined" && gateScreen) gateScreen.classList.remove("hidden");
+    if (typeof inpAlias !== "undefined" && inpAlias) inpAlias.value = state.currentAlias;
+    if (typeof inpAccessKey !== "undefined" && inpAccessKey) inpAccessKey.value = "";
+    if (typeof gateMsg !== "undefined" && gateMsg) {
+      gateMsg.className = "feedback err";
+      gateMsg.textContent = "Tu sesión fue cerrada por el administrador. Ingresa tu clave de nuevo.";
+    }
+    return true;
+  }
+  return false;
+}
+
 async function sincronizarDesdeNube() {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   try {
@@ -201,13 +237,16 @@ async function sincronizarDesdeNube() {
         pinHash: nubeNorm.pinHash || state.pinHash,
         accessKeyHash: nubeNorm.accessKeyHash || state.accessKeyHash,
         updatedAt: nubeNorm.updatedAt,
+        kickedUsers: nubeNorm.kickedUsers,
         items: nubeNorm.items,
         polls: nubeNorm.polls,
         requests: nubeNorm.requests,
         visits: nubeNorm.visits
       };
       guardarEstadoLocal(state);
-      renderizarTodo();
+      if (!verificarSiFueExpulsado()) {
+        renderizarTodo();
+      }
     } else {
       await subirEstadoNube(state);
     }
@@ -334,16 +373,33 @@ function formatearHora(ts) {
   }
 }
 
-function registrarVisita(alias) {
+const INTERVALO_VISITA_MS = 30 * 60 * 1000; // 30 minutos
+
+function registrarVisita(alias, forzar = false) {
+  const limpio = String(alias || "").trim();
+  if (!limpio) return false;
+  const aliasKey = limpio.toLowerCase();
+  const ahora = Date.now();
+
+  if (!forzar) {
+    const ultima = (state.visits || []).find(
+      (v) => String(v.alias || "").trim().toLowerCase() === aliasKey
+    );
+    if (ultima && ahora - (Number(ultima.time) || 0) < INTERVALO_VISITA_MS) {
+      return false;
+    }
+  }
+
   state.visits.unshift({
-    id: "vis-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-    alias,
-    time: Date.now()
+    id: "vis-" + ahora + "-" + Math.random().toString(36).slice(2, 6),
+    alias: limpio,
+    time: ahora
   });
   if (state.visits.length > 100) {
     state.visits = state.visits.slice(0, 100);
   }
   guardarEstado(state);
+  return true;
 }
 
 async function asegurarClaveUniversalInicial() {
@@ -1172,7 +1228,29 @@ function renderizarRegistrosAdmin() {
   const visEl = document.getElementById("adm-visits-list");
   visEl.innerHTML = !state.visits.length
     ? `<div class="muted small">Sin accesos registrados.</div>`
-    : state.visits.map((v) => `<div class="feed-card"><div><strong>${escaparHtml(v.alias)}</strong><div class="item-meta">${escaparHtml(formatearHora(v.time))}</div></div></div>`).join("");
+    : state.visits.map((v) => `
+        <div class="feed-card">
+          <div>
+            <strong>${escaparHtml(v.alias)}</strong>
+            <div class="item-meta">${escaparHtml(formatearHora(v.time))}</div>
+          </div>
+          <button type="button" class="btn-chip btn-kick-alias" data-alias="${escaparHtml(v.alias)}" style="color:var(--err);">🚪 Expulsar</button>
+        </div>
+      `).join("");
+
+  visEl.querySelectorAll(".btn-kick-alias").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const aliasObjetivo = String(btn.dataset.alias || "").trim();
+      if (!aliasObjetivo) return;
+      if (!state.kickedUsers || typeof state.kickedUsers !== "object") {
+        state.kickedUsers = {};
+      }
+      state.kickedUsers[aliasObjetivo.toLowerCase()] = Date.now();
+      guardarEstado(state);
+      btn.textContent = "✓ Expulsado";
+      setTimeout(() => { btn.textContent = "🚪 Expulsar"; }, 1400);
+    });
+  });
 }
 
 document.getElementById("btn-clear-reqs").addEventListener("click", () => {
@@ -1254,5 +1332,8 @@ asegurarClaveUniversalInicial().then(async () => {
   }
   renderizarTodo();
   await sincronizarDesdeNube();
+  if (state.currentAlias && state.unlockedSession) {
+    registrarVisita(state.currentAlias, false);
+  }
   setInterval(sincronizarDesdeNube, 15000);
 });
