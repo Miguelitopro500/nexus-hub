@@ -126,9 +126,98 @@ function guardarEstadoLocal(estado) {
 
 let state = cargarEstadoLocal();
 let guardandoNube = false;
+let colaGuardado = Promise.resolve();
+
+function combinarListasPorId(localArr, nubeArr, limite = 200) {
+  const mapa = new Map();
+  const a = Array.isArray(nubeArr) ? nubeArr : [];
+  const b = Array.isArray(localArr) ? localArr : [];
+
+  for (const item of a) {
+    if (item && item.id) {
+      mapa.set(item.id, { ...item });
+    }
+  }
+
+  for (const item of b) {
+    if (!item || !item.id) continue;
+    const previo = mapa.get(item.id);
+    if (!previo) {
+      mapa.set(item.id, { ...item });
+    } else {
+      const tLocal = Number(item.time) || 0;
+      const tNube = Number(previo.time) || 0;
+      mapa.set(item.id, {
+        ...previo,
+        ...item,
+        adminReply: item.adminReply || previo.adminReply || "",
+        time: Math.max(tLocal, tNube) || Date.now()
+      });
+    }
+  }
+
+  const resultado = Array.from(mapa.values());
+  if (resultado.length > 0 && "time" in resultado[0]) {
+    resultado.sort((x, y) => (Number(y.time) || 0) - (Number(x.time) || 0));
+  }
+  return limite ? resultado.slice(0, limite) : resultado;
+}
+
+function combinarEncuestas(localPolls, nubePolls) {
+  const mapa = new Map();
+  const a = Array.isArray(nubePolls) ? nubePolls : [];
+  const b = Array.isArray(localPolls) ? localPolls : [];
+
+  for (const p of a) {
+    if (p && p.id) {
+      mapa.set(p.id, {
+        ...p,
+        options: Array.isArray(p.options) ? p.options.map((o) => ({ ...o, votes: Number(o.votes) || 0 })) : [],
+        votedBy: Array.isArray(p.votedBy) ? [...p.votedBy] : []
+      });
+    }
+  }
+
+  for (const p of b) {
+    if (!p || !p.id) continue;
+    const prev = mapa.get(p.id);
+    if (!prev) {
+      mapa.set(p.id, {
+        ...p,
+        options: Array.isArray(p.options) ? p.options.map((o) => ({ ...o, votes: Number(o.votes) || 0 })) : [],
+        votedBy: Array.isArray(p.votedBy) ? [...p.votedBy] : []
+      });
+    } else {
+      const votantesCombinados = Array.from(
+        new Set([...(prev.votedBy || []), ...(Array.isArray(p.votedBy) ? p.votedBy : [])])
+      );
+      const opcionesCombinadas = (p.options || []).map((optLocal) => {
+        const optNube = (prev.options || []).find((o) => o.id === optLocal.id);
+        const votosLocal = Number(optLocal.votes) || 0;
+        const votosNube = Number(optNube && optNube.votes) || 0;
+        return {
+          ...optNube,
+          ...optLocal,
+          votes: Math.max(votosLocal, votosNube)
+        };
+      });
+      mapa.set(p.id, {
+        ...prev,
+        ...p,
+        options: opcionesCombinadas,
+        votedBy: votantesCombinados
+      });
+    }
+  }
+
+  return Array.from(mapa.values());
+}
 
 async function subirEstadoNube(estado) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || guardandoNube) return;
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  while (guardandoNube) {
+    await new Promise((r) => setTimeout(r, 80));
+  }
   guardandoNube = true;
   try {
     const payloadCompartido = {
@@ -163,7 +252,7 @@ async function subirEstadoNube(estado) {
     });
 
     if (!res.ok) {
-      await fetch(`${SUPABASE_URL}/rest/v1/nexus_state`, {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/nexus_state`, {
         method: "POST",
         headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify({
@@ -173,17 +262,20 @@ async function subirEstadoNube(estado) {
         })
       });
     }
+    return Boolean(res && res.ok);
   } catch (e) {
     console.warn("Sin conexión temporal a Supabase, guardado local activo.");
+    return false;
   } finally {
     guardandoNube = false;
   }
 }
 
-function guardarEstado(estado) {
+async function guardarEstado(estado) {
   estado.updatedAt = Date.now();
   guardarEstadoLocal(estado);
-  subirEstadoNube(estado);
+  colaGuardado = colaGuardado.then(() => subirEstadoNube(estado));
+  return colaGuardado;
 }
 
 function verificarSiFueExpulsado() {
@@ -231,24 +323,31 @@ async function sincronizarDesdeNube() {
       return;
     }
     const nubeNorm = normalizarEstado(nube);
-    if (nubeNorm.updatedAt >= (Number(state.updatedAt) || 0)) {
-      state = {
-        ...state,
-        pinHash: nubeNorm.pinHash || state.pinHash,
-        accessKeyHash: nubeNorm.accessKeyHash || state.accessKeyHash,
-        updatedAt: nubeNorm.updatedAt,
-        kickedUsers: nubeNorm.kickedUsers,
-        items: nubeNorm.items,
-        polls: nubeNorm.polls,
-        requests: nubeNorm.requests,
-        visits: nubeNorm.visits
-      };
-      guardarEstadoLocal(state);
-      if (!verificarSiFueExpulsado()) {
-        renderizarTodo();
-      }
-    } else {
-      await subirEstadoNube(state);
+
+    const itemsMezclados = combinarListasPorId(state.items, nubeNorm.items, 200);
+    const requestsMezcladas = combinarListasPorId(state.requests, nubeNorm.requests, 200);
+    const visitsMezcladas = combinarListasPorId(state.visits, nubeNorm.visits, 100);
+    const pollsMezcladas = combinarEncuestas(state.polls, nubeNorm.polls);
+    const kickedMezclados = {
+      ...(nubeNorm.kickedUsers || {}),
+      ...(state.kickedUsers || {})
+    };
+
+    state = {
+      ...state,
+      pinHash: nubeNorm.pinHash || state.pinHash,
+      accessKeyHash: nubeNorm.accessKeyHash || state.accessKeyHash,
+      updatedAt: Math.max(Number(state.updatedAt) || 0, Number(nubeNorm.updatedAt) || 0),
+      kickedUsers: kickedMezclados,
+      items: itemsMezclados,
+      polls: pollsMezcladas,
+      requests: requestsMezcladas,
+      visits: visitsMezcladas
+    };
+
+    guardarEstadoLocal(state);
+    if (!verificarSiFueExpulsado()) {
+      renderizarTodo();
     }
   } catch (e) {}
 }
