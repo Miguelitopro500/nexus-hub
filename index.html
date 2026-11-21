@@ -9,99 +9,118 @@
 <body>
   <canvas id="fx-canvas"></canvas>
 
-  <!-- BARRA SUPERIOR Y LLAVE OCULTA DE ADMINISTRADOR (5 TOQUES EN EL NÚCLEO) -->
+  <!-- CABECERA SUPERIOR FIJA -->
   <header class="topbar">
-    <div class="brand" id="admin-trigger" title="Núcleo del Sistema">
-      <span class="core-icon">◈</span>
-      <div>
-        <div class="brand-title">NEXUS HUB</div>
-        <div class="brand-sub" id="user-badge">VISITANTE: SIN IDENTIFICAR</div>
+    <div class="topbar-inner">
+      <div class="brand" id="admin-trigger" title="Núcleo del Sistema">
+        <span class="core-icon">◈</span>
+        <div class="brand-text">
+          <div class="brand-title">NEXUS HUB</div>
+          <div class="brand-sub" id="user-badge">VISITANTE: SIN IDENTIFICAR</div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-chip" id="btn-change-alias" title="Cambiar Alias">👤 Alias</button>
       </div>
     </div>
-    <button class="btn-chip" id="btn-change-alias" title="Cambiar Alias">👤 Alias</button>
   </header>
 
-  <!-- PORTAL DE ACCESO RÁPIDO (ALIAS + CLAVE UNIVERSAL) -->
-  <section id="gate-screen" class="panel gate-card">
-    <div class="tag">ACCESO AL SISTEMA</div>
-    <h1>Identificación Rápida</h1>
-    <p class="muted">Escribe tu alias y la clave de acceso del centro para entrar y registrar tu visita.</p>
-    <input type="text" id="inp-alias" maxlength="24" placeholder="Escribe tu alias (Ej. Nombre...)" autocomplete="off" />
-    <input type="password" id="inp-access-key" maxlength="40" placeholder="Clave de acceso del centro" autocomplete="off" />
-    <button class="btn btn-primary" id="btn-enter-hub">⚡ Ingresar al Centro</button>
-    <div class="feedback" id="gate-msg"></div>
+  <!-- PORTAL DE ACCESO -->
+  <section id="gate-screen" class="gate-hero">
+    <div class="hero-backdrop"></div>
+    <div class="hero-content">
+      <div class="hero-dots" aria-hidden="true">
+        <span class="dot-amber"></span>
+        <span class="dot-blue-bright"></span>
+        <span class="dot-blue-deep"></span>
+      </div>
+      <span class="tag">ACCESO AL SISTEMA</span>
+      <h1>Identificación Rápida.<br />Entra a tu bóveda.<br />Explora, reta y participa.</h1>
+      <p class="hero-sub">Escribe tu alias y la clave de acceso del centro para ingresar y registrar tu visita.</p>
+
+      <div class="gate-box">
+        <input type="text" id="inp-alias" maxlength="24" placeholder="Escribe tu alias (Ej. Nombre...)" autocomplete="off" />
+        <input type="password" id="inp-access-key" maxlength="40" placeholder="Clave de acceso del centro" autocomplete="off" />
+        <button class="btn btn-primary" id="btn-enter-hub">⚡ Ingresar al Centro</button>
+        <div class="feedback" id="gate-msg"></div>
+      </div>
+    </div>
   </section>
 
-  <!-- CONTENEDOR PRINCIPAL (SE ACTIVA AL VALIDAR ACCESO) -->
+  <!-- CONTENEDOR PRINCIPAL -->
   <main id="hub-main" class="hidden">
 
-    <!-- NAVEGACIÓN DE APARTADOS PRINCIPALES -->
-    <nav class="main-tabs">
+    <!-- NAVEGACIÓN PRINCIPAL -->
+    <nav class="main-tabs" aria-label="Secciones principales">
       <button class="tab-btn active" data-tab="tab-inicio">🏠 Inicio</button>
       <button class="tab-btn" data-tab="tab-boveda">🎬 Bóveda</button>
       <button class="tab-btn" data-tab="tab-comunidad">💬 Canales</button>
       <button class="tab-btn" data-tab="tab-votaciones">🗳️ Votos</button>
     </nav>
 
-    <!-- =========================================================
-         APARTADO 0: INICIO & CARTELERA DESLIZANTE
-         ========================================================= -->
+    <!-- APARTADO 0: INICIO & CARTELERA DESLIZANTE -->
     <section id="tab-inicio" class="tab-view">
-      <div class="section-head">
-        <span class="tag">CARTELERA EN VIVO</span>
-        <h2>Habilitados por el Administrador</h2>
+      <div class="section-head section-row">
+        <div>
+          <span class="tag">CARTELERA EN VIVO</span>
+          <h2>Habilitados por el Administrador</h2>
+        </div>
+        <div class="carousel-controls inline-controls">
+          <button class="btn-icon" id="prev-slide" aria-label="Anterior">◀</button>
+          <div class="carousel-dots" id="billboard-dots"></div>
+          <button class="btn-icon" id="next-slide" aria-label="Siguiente">▶</button>
+        </div>
       </div>
 
-      <!-- Cartelera deslizante -->
       <div class="carousel-wrap">
         <div class="carousel-track" id="billboard-track"></div>
-        <div class="carousel-controls">
-          <button class="btn-icon" id="prev-slide">◀</button>
-          <div class="carousel-dots" id="billboard-dots"></div>
-          <button class="btn-icon" id="next-slide">▶</button>
-        </div>
       </div>
 
-      <div class="panel info-grid">
-        <div class="mini-card" data-jump="tab-boveda">
-          <div class="mini-icon">🔐</div>
-          <strong>Bóveda & Retos</strong>
-          <span>Películas, series, libros, archivos y canje de enlaces.</span>
+      <div class="feature-stack">
+        <div class="feature-row" data-jump="tab-boveda">
+          <div class="feature-icon-box">🔐</div>
+          <div class="feature-copy">
+            <strong>Bóveda & Retos</strong>
+            <span>Películas, series, libros, archivos y canje de enlaces mediante prueba.</span>
+          </div>
+          <span class="feature-chevron">›</span>
         </div>
-        <div class="mini-card" data-jump="tab-comunidad">
-          <div class="mini-icon">📡</div>
-          <strong>Peticiones & Canales</strong>
-          <span>Pide películas, archivos, libros o deja preguntas.</span>
+
+        <div class="feature-row" data-jump="tab-comunidad">
+          <div class="feature-icon-box">📡</div>
+          <div class="feature-copy">
+            <strong>Peticiones & Canales</strong>
+            <span>Pide películas, archivos, libros o deja preguntas directamente al admin.</span>
+          </div>
+          <span class="feature-chevron">›</span>
         </div>
       </div>
     </section>
 
-    <!-- =========================================================
-         APARTADO 1: BÓVEDA (SUB-APARTADOS + RETO + CANJE DRIVE)
-         ========================================================= -->
+    <!-- APARTADO 1: BÓVEDA -->
     <section id="tab-boveda" class="tab-view hidden">
-      <!-- Sub-apartados de categoría -->
       <div class="sub-tabs" id="vault-categories">
         <button class="sub-btn active" data-cat="peliculas">🎬 Películas</button>
         <button class="sub-btn" data-cat="series">📺 Series / Anime</button>
         <button class="sub-btn" data-cat="archivos">📁 Archivos</button>
       </div>
 
-      <!-- Sub-vista 1A: Lista de contenido disponible en la categoría -->
       <div id="vault-list-view" class="panel">
-        <div class="tag">SELECCIONA UN ELEMENTO</div>
-        <h2 id="vault-cat-title">Catálogo de Películas</h2>
-        <p class="muted">Elige lo que deseas desbloquear para iniciar la prueba de acceso.</p>
+        <div class="panel-top">
+          <span class="tag">SELECCIONA UN ELEMENTO</span>
+          <h2 id="vault-cat-title">Catálogo de Películas</h2>
+          <p class="muted">Elige lo que deseas desbloquear para iniciar la prueba de acceso.</p>
+        </div>
         <div id="vault-items-list" class="items-stack"></div>
       </div>
 
-      <!-- Sub-vista 1B: Prueba de concentración + Canje de código -->
       <div id="vault-challenge-view" class="panel hidden">
-        <button class="btn-link" id="btn-back-vault">← Volver al catálogo</button>
-        <div class="tag" id="selected-item-cat">ELEMENTO SELECCIONADO</div>
+        <div class="challenge-topbar">
+          <button class="btn-link" id="btn-back-vault">← Volver al catálogo</button>
+          <span class="tag" id="selected-item-cat">ELEMENTO SELECCIONADO</span>
+        </div>
         <h2 id="selected-item-title">Título</h2>
 
-        <!-- Minijuego de Memoria y Secuencia 4x4 -->
         <div class="challenge-box" id="challenge-stage">
           <div class="challenge-header">
             <span>🧠 PRUEBA DE CONCENTRACIÓN</span>
@@ -113,21 +132,20 @@
           <div class="feedback" id="matrix-msg"></div>
         </div>
 
-        <!-- Caja de Código Obtenido (se revela al ganar el reto) -->
         <div class="code-reveal hidden" id="code-earned-box">
           <div class="small">CÓDIGO GENERADO PARA ESTE ELEMENTO:</div>
           <div class="code-pill" id="earned-code-text">---</div>
         </div>
 
-        <!-- Canje del Código -->
         <div class="redeem-box">
           <label class="small" for="inp-vault-code">Ingresa o pega el código de desbloqueo:</label>
-          <input type="text" id="inp-vault-code" placeholder="Ej. NEX-1010" autocomplete="off" />
-          <button class="btn btn-primary" id="btn-verify-code">🔓 Verificar y Obtener Enlace</button>
+          <div class="redeem-row">
+            <input type="text" id="inp-vault-code" placeholder="Ej. NEX-1010" autocomplete="off" />
+            <button class="btn btn-primary" id="btn-verify-code">🔓 Verificar y Obtener Enlace</button>
+          </div>
           <div class="feedback" id="redeem-msg"></div>
         </div>
 
-        <!-- Enlace Final de Google Drive -->
         <div class="drive-result hidden" id="drive-result-box">
           <div class="tag ok-tag">ACCESO CONCEDIDO</div>
           <div class="url-display" id="final-drive-url"></div>
@@ -140,9 +158,7 @@
       </div>
     </section>
 
-    <!-- =========================================================
-         APARTADO 2: CANALES Y PETICIONES
-         ========================================================= -->
+    <!-- APARTADO 2: CANALES Y PETICIONES -->
     <section id="tab-comunidad" class="tab-view hidden">
       <div class="sub-tabs" id="channel-tabs">
         <button class="sub-btn active" data-channel="pedir-peli">🎬 Pedir Película / Serie</button>
@@ -151,9 +167,11 @@
       </div>
 
       <div class="panel">
-        <div class="tag" id="channel-tag">CANAL #PEDIR-PELÍCULA</div>
-        <h2 id="channel-title">Solicitar Película o Serie</h2>
-        <p class="muted" id="channel-desc">Escribe lo que deseas que el administrador agregue o revise.</p>
+        <div class="panel-top">
+          <span class="tag" id="channel-tag">CANAL #PEDIR-PELÍCULA</span>
+          <h2 id="channel-title">Solicitar Película o Serie</h2>
+          <p class="muted" id="channel-desc">Escribe lo que deseas que el administrador agregue o revise.</p>
+        </div>
 
         <div class="request-form">
           <input type="text" id="inp-req-title" maxlength="80" placeholder="Título o tema de tu solicitud..." />
@@ -163,14 +181,12 @@
         </div>
 
         <div class="divider"></div>
-        <div class="small muted" style="margin-bottom: 8px;">Actividad reciente en este canal:</div>
+        <div class="small muted feed-label">Actividad reciente en este canal:</div>
         <div id="channel-feed" class="feed-list"></div>
       </div>
     </section>
 
-    <!-- =========================================================
-         APARTADO 3: VOTACIONES / ENCUESTAS LIBRES
-         ========================================================= -->
+    <!-- APARTADO 3: VOTACIONES -->
     <section id="tab-votaciones" class="tab-view hidden">
       <div class="section-head">
         <span class="tag">ENCUESTAS ABIERTAS</span>
@@ -180,8 +196,7 @@
     </section>
   </main>
 
-  <!-- =========================================================
-       ========================================================= -->
+  <!-- MODAL LOGIN ADMIN -->
   <div id="admin-login-modal" class="modal-backdrop hidden">
     <div class="panel modal-card">
       <div class="tag">ZONA RESTRINGIDA</div>
@@ -196,9 +211,7 @@
     </div>
   </div>
 
-  <!-- =========================================================
-       PANEL DE CONTROL DEL ADMINISTRADOR (EDICIÓN EN VIVO)
-       ========================================================= -->
+  <!-- PANEL DE CONTROL DEL ADMINISTRADOR -->
   <div id="admin-panel-modal" class="modal-backdrop hidden">
     <div class="panel modal-card modal-large">
       <div class="admin-header">
@@ -216,7 +229,6 @@
         <button class="sub-btn" data-admtab="adm-security">🔐 Claves y Copia</button>
       </div>
 
-      <!-- Admin Tab 1: Crear / Editar / Borrar Contenido y Cartelera -->
       <div id="adm-items" class="adm-view">
         <h3 id="adm-form-heading">Agregar Nuevo Elemento</h3>
         <input type="hidden" id="adm-edit-id" />
@@ -247,7 +259,6 @@
         <div id="adm-items-list" class="items-stack"></div>
       </div>
 
-      <!-- Admin Tab 2: Crear / Borrar Encuestas y Ver Resultados -->
       <div id="adm-polls" class="adm-view hidden">
         <h3>Crear Nueva Encuesta Libre</h3>
         <input type="text" id="adm-poll-question" maxlength="100" placeholder="Pregunta o tema (Ej. ¿Qué libro subimos esta semana?)" />
@@ -260,7 +271,6 @@
         <div id="adm-polls-list" class="items-stack"></div>
       </div>
 
-      <!-- Admin Tab 3: Peticiones (con Respuesta del Admin) y Visitas -->
       <div id="adm-logs" class="adm-view hidden">
         <div class="row-between">
           <h3>Peticiones de Usuarios</h3>
@@ -276,7 +286,6 @@
         <div id="adm-visits-list" class="feed-list"></div>
       </div>
 
-      <!-- Admin Tab 4: Clave de Acceso Universal, PIN Admin y Respaldo JSON -->
       <div id="adm-security" class="adm-view hidden">
         <h3>Clave de Acceso Universal al Centro</h3>
         <p class="muted small">Es la clave que pides a quienes invites al entrar. Cámbiala si llega a filtrarse.</p>
@@ -302,4 +311,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
